@@ -33,7 +33,34 @@ def get_layer_properties(layer, batch_size, input_size):
     H = input_size[0]
     F = input_size[1]
     B = batch_size
-    numerator = B*F*H*M*N*K*K
-    denominator = (M*N*K*K)+(B*(M+N)*F*H)
+    numerator = (B*F*H*M*N*K*K)/G
+    denominator = (M*N*K*K)+((B*(M+N)*F*H)/G)
     macs = B*M*N*K*K*F*H/G
     return numerator/denominator, macs
+
+def conv_fn(layer, x, y):
+    if type(layer) == torch.nn.modules.conv.Conv2d:
+        print("Conving.. ", str(layer))
+        M = layer.in_channels
+        N = layer.out_channels
+        K = layer.kernel_size[0]
+        G = layer.groups
+        H = y.size()[2]
+        F = y.size()[3]
+        B = y.size()[0]
+        numerator = (B*F*H*M*N*K*K)/G
+        denominator = (M*N*K*K)+((B*(M+N)*F*H)/G)
+        macs = B*M*N*K*K*F*H/G
+        layer.total_ai += (numerator/denominator)
+        print("Conved ", str(layer))
+
+handler_collection = []
+
+def add_hook(layer):
+    if len(list(layer.children())) > 0:
+        return
+
+    layer.register_buffer('total_ai', torch.zeros(1))
+    handler = layer.register_forward_hook(conv_fn)
+    handler_collection.append(handler)
+    print("Added %s" % str(layer))
