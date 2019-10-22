@@ -52,8 +52,8 @@ class ArithmeticIntensity(object):
         for m in self.model.modules():
             if len(list(m.children())) > 0:  # skip for non-leaf module
                 continue
-            total_ai += m.total_ai
-            total_macs += m.total_macs
+            total_ai += m.ai
+            total_macs += m.macs
             weights = m.weights
             memory_access_in = m.memory_access_in
             memory_access_out = m.memory_access_out
