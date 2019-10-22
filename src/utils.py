@@ -34,7 +34,7 @@ def get_layer_properties(layer, batch_size, input_size):
     F = input_size[1]
     B = batch_size
     numerator = (B*F*H*M*N*K*K)/G
-    denominator = (M*N*K*K)+((B*(M+N)*F*H)/G)
+    denominator = (M*N*K*K)/G+((B*(M+N)*F*H))
     macs = B*M*N*K*K*F*H/G
     return numerator/denominator, macs
 
@@ -48,10 +48,18 @@ def conv_fn(layer, x, y):
         F = y.size()[3]
         B = y.size()[0]
         numerator = (B*F*H*M*N*K*K)/G
-        denominator = (M*N*K*K)+((B*(M+N)*F*H)/G)
+        weights = (M*N*K*K)
+        memory_access_in = B*M*F*H/G
+        memory_access_out = B*N*F*H/G
+        memory_access = ((B*(M+N)*F*H)/G)
+        denominator = weights + memory_access
         macs = B*M*N*K*K*F*H/G
-        layer.total_ai += (numerator/denominator)
-        layer.total_macs += macs
+        layer.ai += (numerator/denominator)
+        layer.macs += macs
+        layer.weights = weights
+        layer.memory_access = memory_access
+        layer.memory_access_in = memory_access_in
+        layer.memory_access_out = memory_access_out
 
 handler_collection = []
 
@@ -59,8 +67,12 @@ def add_hook(layer):
     if len(list(layer.children())) > 0:
         return
 
-    layer.register_buffer('total_ai', torch.zeros(1))
-    layer.register_buffer('total_macs', torch.zeros(1))
+    layer.register_buffer('ai', torch.zeros(1))
+    layer.register_buffer('macs', torch.zeros(1))
+    layer.register_buffer('weights', torch.zeros(1))
+    layer.register_buffer('memory_access', torch.zeros(1))
+    layer.register_buffer('memory_access_in', torch.zeros(1))
+    layer.register_buffer('memory_access_out', torch.zeros(1))
     handler = layer.register_forward_hook(conv_fn)
     handler_collection.append(handler)
     print("Registered %s" % str(layer))
