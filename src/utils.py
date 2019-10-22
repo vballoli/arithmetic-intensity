@@ -56,10 +56,10 @@ def conv_fn(layer, x, y):
         macs = B*M*N*K*K*F*H/G
         layer.ai += (numerator/denominator)
         layer.macs += macs
-        layer.weights = weights
-        layer.memory_access = memory_access
-        layer.memory_access_in = memory_access_in
-        layer.memory_access_out = memory_access_out
+        layer.weights += weights
+        layer.memory_access += memory_access
+        layer.memory_access_in += memory_access_in
+        layer.memory_access_out += memory_access_out
 
 handler_collection = []
 
